@@ -1,0 +1,41 @@
+#cloud-config
+
+write_files:
+- path: /etc/cloud/cloud.cfg.d/99-custom-networking.cfg
+  permissions: '0644'
+  content: |
+    network: {config: disabled}
+- path: /etc/netplan/config.yaml
+  permissions: '0644'
+  content: |
+    network:
+        version: 2
+        ethernets:
+            ens6:
+                dhcp4: false
+                addresses: [192.168.10.20/24]
+                gateway4: 192.168.10.1
+                nameservers:
+                  addresses: [1.1.1.1]
+
+
+
+runcmd:
+ - echo "runcmd start"
+ - rm /etc/netplan/50-cloud-init.yaml
+ - rm /etc/netplan/01-netcfg.yaml
+ - netplan generate
+ - netplan apply
+ - sleep 60
+#  Set desired DBname username and password below, will need to provide same information in wp-install section
+ - export db_name="testdb"
+ - export db_user="wpuser"
+ - export db_password="password1234"
+#  end db credentials
+ - apt update
+ - apt install -y mysql-server
+#  change repo below for prod release
+ - git clone https://github.com/ionoslabs/wp-ext-db /tmp/mysql-cloud-init
+ - chmod +x /tmp/mysql-cloud-init/mysql-install.sh
+ - /tmp/mysql-cloud-init/mysql-install.sh
+ - echo "runcmd complete"

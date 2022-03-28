@@ -1,0 +1,36 @@
+#cloud-config
+write_files:
+- path: /etc/cloud/cloud.cfg.d/99-custom-networking.cfg
+  permissions: '0644'
+  content: |
+    network: {config: disabled}
+- path: /etc/netplan/config.yaml
+  permissions: '0644'
+  content: |
+    network:
+        version: 2
+        ethernets:
+            ens6:
+                dhcp4: true                             
+            ens7:
+                dhcp4: false
+                addresses: [192.168.10.10/24]  
+
+runcmd:
+ - echo "runcmd start"
+ - rm /etc/netplan/50-cloud-init.yaml
+ - rm /etc/netplan/01-netcfg.yaml
+ - netplan generate
+ - netplan apply
+ - sleep 30
+ - apt update
+ - apt install -y apache2
+#  set db credentials below
+ - export db_name="testdb"
+ - export db_user="wpuser"
+ - export db_password="password1234"
+ - export db_host="192.168.10.20"
+#  end db credentials
+ - git clone https://github.com/ionoslabs/wp-ext-db /tmp/wp-install
+ - chmod +x /tmp/wp-install/wp-install.sh
+ - /tmp/wp-install/wp-install.sh
